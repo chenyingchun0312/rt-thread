@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.S": "arm",
+        "rtconfig.h": "c",
+        "rthw.h": "c"
+    }
+}
