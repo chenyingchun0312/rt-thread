@@ -140,6 +140,12 @@ rt_uint8_t *rt_hw_stack_init(void       *tentry,
 #ifndef RT_USING_SMP
 void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to)
 {
+    /*
+        这里加上这个if条件的原因：
+        如果，此时，正在执行服务函数，irq_entry的时候，发生了中断嵌套，也就是说，在中断函数中执行的时候，切换到了另一个中断函数，此时
+        rt_thread_switch_interrupt_flag 值，还是为 1 的，在第二个中断函数中，又调用了任务切换函数，此时，不会有from_thread,只有to_thread,
+        并且，to_thread和第一次中断中，任务切换时的to_thread是同一个thread
+    */
     if (rt_thread_switch_interrupt_flag == 0)
         rt_interrupt_from_thread = from;
 
