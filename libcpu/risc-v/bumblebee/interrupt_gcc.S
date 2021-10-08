@@ -27,7 +27,7 @@ irq_entry:
     /* t0寄存器的值赋值为0x80 */
     li    t0,   0x80
 
-    /* 将 t0 寄存器的值，保存到任务A的任务栈中的 mstatus 寄存器中 */
+    /* 将 t0 寄存器的值，保存到任务A的任务栈中的 mstatus 寄存器中，即将mstatus的mpie设置为了1，并且关闭了全局中断(mie设置为了0) */
     STORE t0,   2 * REGBYTES(sp)
 
     /* 将 CPU 的其他寄存器的值，保存到任务A的任务栈中的 其他的寄存器中 */
@@ -60,7 +60,7 @@ irq_entry:
     STORE x30, 30 * REGBYTES(sp)
     STORE x31, 31 * REGBYTES(sp)
 
-    /* 备份 CPU 的 sp 寄存器的值到 s0 寄存器中，下面会使用s0，恢复 CPU 的寄存器 */
+    /* 备份 任务A(from) 的 sp 寄存器的值到 s0 寄存器中，下面会使用s0，恢复 CPU 的寄存器 */
     move  s0, sp
 
     /* 在中断函数中，中断函数中调用的C函数，需要使用 sp， 这里，在中断函数中，使用的 sp 为，系统的栈资源 */
@@ -98,16 +98,18 @@ irq_entry:
     lw    s2, 0(s0)
 
     /* 如果 s2的值，即 rt_thread_switch_interrupt_flag 值，如果不为0，则需要继续执行下一条指令，如果为0，则需要跳转到 spurious_interrupt 标号处 执行 */
+    /* spurious: 虚假的 */
     beqz  s2, spurious_interrupt
     /* clear switch interrupt flag */
 
+    /* 如果确实产生了中断，即 rt_thread_switch_interrupt_flag == 1 了*/
     /* 将 s0 所执向的地址的内容设置为0， 也就是，将变量 rt_thread_switch_interrupt_flag 赋值为了 0 */
     sw    zero, 0(s0)
 
     /* 将 mepc 的值，赋值给 a0 寄存器，mepc 的值是，跳转到中断函数执行之前的 PC 指针 */
     csrr  a0, mepc
 
-    /* 将 mpec 的值写回到任务栈中的 epc 中 */
+    /* 将 mpec 的值写回到任务栈中的 epc 中，上面将CPU寄存器保存到任务A的任务栈中代码里，并没有mpec保存到任务栈的epc中，因此，这里加上了这个步骤*/
     STORE a0, 0 * REGBYTES(sp)
 
     /* 将 rt_interrupt_from_thread 地址，赋值给 s0 ， 这里 rt_interrupt_from_thread 本身，表示的是from_thread线程对象的 sp 元素的地址，
@@ -120,7 +122,7 @@ irq_entry:
     LOAD  s1, 0(s0)
 
     /* 将当前 sp 寄存器中的值，赋值给 s1 所指向的地址处，即 from_thread 的 sp 元素的值 等于当前 */
-    /* 这里，其实在恢复任务A（假设从任务A，切换到了中断函数执行）的 sp指针的值，即from_thread->sp 仍然指向了 from_thread 的任务栈 */
+    /* 这里，其实在恢复任务A（假设从任务A，切换到了中断函数执行）的任务栈sp指针的值，即from_thread->sp 仍然指向了 from_thread 的任务栈 */
     STORE sp, 0(s1)
 
 
@@ -130,7 +132,7 @@ irq_entry:
     /* 将 s0 的内容，赋值给了s1 , s0的内容，其实就是 to_thread->sp 元素的地址*/
     LOAD  s1, 0(s0)
 
-    /* 将to_thread->sp 元素的内容，赋值给了sp，即当前CPU的sp，已经回复到指向to_thead的任务栈了 */
+    /* 将to_thread->sp 元素的内容，赋值给了sp，即当前CPU的sp，已经恢复到指向to_thead的任务栈了 */
     LOAD  sp, 0(s1)
 
     /* 将to_thread的任务栈中的内容，恢复到 CPU 的寄存器中 */
@@ -183,5 +185,6 @@ spurious_interrupt:
     LOAD  x30, 30 * REGBYTES(sp)
     LOAD  x31, 31 * REGBYTES(sp)
 
+    /* 当数据出栈后，栈指针需要向上移动 */
     addi  sp, sp, 32 * REGBYTES
     mret

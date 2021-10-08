@@ -23,7 +23,7 @@
     .globl rt_hw_interrupt_disable
 rt_hw_interrupt_disable:
     /* 
-     * 1. a0 = mstatus; 备份mstatus这个csr寄存器的值到a0寄存器中
+     * 1. a0 = mstatus; 备份mstatus这个csr寄存器的值到a0寄存器中，保存的mstatus会在enable中断时，恢复
      * 2. mstatus &= ~(8)， 将mstatus的bit3，即mstatus.MIE 清0，表示关闭全局中断
      */
     csrrci a0, mstatus, 8
@@ -55,18 +55,18 @@ rt_hw_interrupt_enable:
   * 使用一次，仅仅进行下文的切换，而无上文的保存动作
   * 
   * 1. 初始化，启动调度器，仅进行下文的切换，这里的下文，具体是指，从就绪任务表中，查询到的，优先级最高的，最先要被执行的任务的任务栈信息
-  * 2. 任务栈信息具体是：
+  * 2. 任务栈信息具体是：系统第一次从裸机环境切换到任务时，这里的任务栈，其实就是保存到任务栈中的CPU的寄存器信息，即 rt_hw_stack_frame
   * 3. 所谓的切换是指：将任务栈信息，赋值给了CPU的寄存器，以及CPU的控制状态寄存器CSR
-  * 4. 包含CPU的哪些寄存器和CSR寄存器呢？
+  * 4. 包含CPU的哪些寄存器和CSR寄存器呢？主要是：rt_hw_stack_frame
   * 
   */
     .globl rt_hw_context_switch_to
 rt_hw_context_switch_to:
     /* 
      * 1. LOAD sp, (a0) 这里其实省略了一个0长的offset，完整表示为： LOAD sp, 0(a0)
-     * 2. 将a0这个CPU寄存器的值，加上0偏移量，赋值给了CPU的栈指针 sp
+     * 2. 将a0这个CPU寄存器的值，加上0偏移量，赋值给了CPU的栈指针 sp，此时CPU的sp指向的就是将要运行的任务的任务栈
      * 3. 这里a0表示的是，调用 rt_hw_context_switch_to 函数时，传递过来的参数值
-     * 4. 传递过来的参数值，其实就是即将要执行的任务的任务栈指针，具体如： rt_hw_context_switch_to((rt_ubase_t)&to_thread->sp);
+     * 4. 传递过来的参数值，其实就是即将要执行的任务的任务栈指针的地址，具体如： rt_hw_context_switch_to((rt_ubase_t)&to_thread->sp);
      * 5. to_thread->sp 指向的是任务栈的栈底，即 struct rt_hw_stack_frame 对象，也就是 to_thread->sp 指向 epc
      */
     
@@ -106,7 +106,7 @@ rt_hw_context_switch_to:
     //    rt_ubase_t t6;         /* x31 - t6     - temporary register 6                */
     //}
 
-    /* 1. 将a0寄存器的值，即 to_thread->sp 赋值 CPU 寄存器 sp*/
+    /* 1. 将a0寄存器的值，即 to_thread->sp 赋值 CPU 寄存器 sp，此时CPU的sp也指向了将要执行的任务的任务栈*/
     LOAD sp, (a0)
 
 #ifdef RT_USING_SMP
@@ -117,10 +117,10 @@ rt_hw_context_switch_to:
     LOAD a0,   2 * REGBYTES(sp)
 
     /* 3. 将 CPU a0 寄存器的值，赋值给 CPU CSR 寄存器 mstatus */
-    /* 其实，步骤 2 和步骤 3，这两个步骤，其实就是将任务栈的 mstatus 备份到 CPU CSR 寄存器 mstatus  中 */
+    /* 其实，步骤 2 和步骤 3，这两个步骤，其实就是将任务栈的 mstatus 恢复到 CPU CSR 寄存器 mstatus  中 */
     csrw mstatus, a0
 
-    /* 4. 上面备份完任务的 mstatus 后，还需要备份，任务的其他运行时寄存器（ CPU 寄存器和 CSR 寄存器 ）  */
+    /* 4. 上面恢复完任务的 mstatus 后，还需要恢复，任务的其他运行时寄存器（ CPU 寄存器和 CSR 寄存器 ）  */
     j    rt_hw_context_switch_exit
 
 /*
@@ -179,22 +179,41 @@ rt_hw_context_switch:
     FSTORE  f31, 31 * FREGBYTES(sp)
 
 #endif
-    /* 暂且认为：CPU 的 sp 寄存器，在任务运行过程中，不会被修改掉 */
-    /* 此时 sp 的值为将要被挂起的任务的栈顶 */
     /* 将 CPU 的 sp 指针，从将被挂起的任务的栈顶（t6）,移动到被挂起任务的栈底（epc）*/
+
+    /* 由于 rt_hw_context_switch 函数主要工作是：进行任务切换，假定任务切换前正在运行的任务为任务A， 将要运行任务为任务B
+       该函数主要实现，将当前CPU的寄存器保存到任务A的任务栈中，然后将任务B的任务栈恢复到CPU寄存器中
+    */
+
+    /* 假定 from 为任务A, to为任务B */
+
+    /* 进入到该函数内，当前CPU的sp寄存器，此时还指向的是任务A的任务栈地址，由于需要将CPU的寄存器保存到任务A的任务栈中，
+       因此，需要将sp指针向下移动32个CPU字长，用来保存CPU的寄存器信息
+    */
     addi  sp,  sp, -32 * REGBYTES
     /* 将 CPU sp 的内容，赋值给 a0 寄存器所指向的地址内容*/
     /* 也就是epc的值 */
+
+    /* 将CPU的sp指针的值写入到a0地址中，a0表示的任务栈指针sp的地址，(a0)表示sp的值，即将任务栈sp指针指向了保存CPU寄存器后的栈底 */
     STORE sp,  (a0)
 
+    /* 保存CPU寄存器x1到任务A的任务栈 ，这里将x1，即CPU的ra的值保存到了任务栈的epc和ra寄存器中*/
+    /* 由于调用函数 rt_hw_context_switch 时，CPU ra寄存器的值被赋值为了即将要执行的PC值，这里将CPU ra寄存器的值保存到了任务栈中epc和ra中*/
     STORE x1,   0 * REGBYTES(sp)
     STORE x1,   1 * REGBYTES(sp)
 
+    /* 将mstatus CSR寄存器的值读到a0寄存器中 */
     csrr a0, mstatus
+    /* a0 = a0 & 8，相当于判断a0（这里就是mstatus）的bit3的值  */
     andi a0, a0, 8
+
+    /* 如果 mstatus的bit3为0，即当前全局中断是处于关闭状态 则执行 save_mpie ，如果当前全局中断处于开启状态，
+       则将a0的值设置为0x80，即将mpie设置为1，将mie设置为0，关闭全局中断，并且保存了关闭前的全局中断状态
+    */
     beqz a0, save_mpie
     li   a0, 0x80
 save_mpie:
+    /* 将CPU的寄存器保存到即任务A（from）的任务栈中 */
     STORE a0,   2 * REGBYTES(sp)
 
     STORE x4,   4 * REGBYTES(sp)
@@ -231,6 +250,9 @@ save_mpie:
      * sp(1) -> ra;
      * sp(i) -> x(i+2)
      */
+    /* 将任务B（to）的任务栈sp指针的值（就是a1寄存器的值），赋值给CPU的sp寄存器，
+       因为接下来需要将任务B的任务栈中的寄存器信息恢复到CPU寄存器中了（rt_hw_context_switch_exit） 
+    */
     LOAD sp,  (a1)
 
 #ifdef RT_USING_SMP
@@ -289,6 +311,7 @@ rt_hw_context_switch_exit:
     csrw mepc, a0
 
     /* 把将要运行的任务的任务栈中的 ra 寄存器，也可以称为 x1 寄存器 写入到 CPU 的 x1 寄存器中 */
+    /* 为什么要恢复ra寄存器的值呢？ 按理该函数最后执行mret指令后，PC的值会被赋值为mepc，而不是ra */
     LOAD x1,   1 * REGBYTES(sp)
 
     /* t0 = 0x00007800 , 该16进制数据的，bit[14:11] 都为1，其他 bit 为0 */
@@ -302,11 +325,11 @@ rt_hw_context_switch_exit:
     /* 把将要运行的任务的任务栈中的 mstatus 寄存器 赋值给 CPU 的 a0 寄存器  */
     LOAD a0,   2 * REGBYTES(sp)
 
-    /* 将 CSR 寄存器 mstatus 的其他位不变，仅将a0中位1的对应bit设置为1 */
+    /* csrs 指令表示将 CSR 寄存器 mstatus 的其他位不变，仅将a0中为1的对应bit设置为1 */
     /* 相当于执行了 CSRs[mstatus]=  CSRs[mstatus] | x[a0] ,其中 CSRs[mstatus] 表示mstatus的值，x[a0] 表示 a0 寄存器的值*/
     csrs mstatus, a0
 
-    /* 把将要运行的任务的任务栈中的其他寄存器 写入到 CPU 寄存器中 */
+    /* 把将要运行的任务的任务栈中的其他寄存器恢复到 CPU 寄存器中 */
     LOAD x4,   4 * REGBYTES(sp)
     LOAD x5,   5 * REGBYTES(sp)
     LOAD x6,   6 * REGBYTES(sp)
@@ -336,10 +359,7 @@ rt_hw_context_switch_exit:
     LOAD x30, 30 * REGBYTES(sp)
     LOAD x31, 31 * REGBYTES(sp)
 
-    /* 当前 CPU 的 sp 寄存器的值，其实是等于，将要被执行的任务的栈底，即任务栈的 epc所在位置的地址
-     * 将当前 CPU 的 sp 寄存器的值，加上32个寄存器位宽，其实，相当于,此时 CPU 的 sp指针，已经指向了
-     * 将要被执行的任务栈的栈顶，比如t6寄存器的地址处
-     */
+    /* 将要运行的任务的任务栈中的CPU相关寄存器已经恢复到CPU中了，相当于数据出栈了，因此sp指针需要向上移动32个CPU寄存器字长 */
     addi sp,  sp, 32 * REGBYTES
 
 #ifdef ARCH_RISCV_FPU
