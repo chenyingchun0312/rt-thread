@@ -42,3 +42,4 @@ tags
 .history
 CMakeLists.txt
 cmake-build-debug
+*.si4project

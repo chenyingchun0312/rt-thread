@@ -46,7 +46,7 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
 #define RT_CONSOLE_DEVICE_NAME "uart0"
-#define RT_VER_NUM 0x40100
+#define RT_VER_NUM 0x40101
 
 /* RT-Thread Components */
 
@@ -67,6 +67,16 @@
 #define MSH_USING_BUILT_IN_COMMANDS
 #define FINSH_USING_DESCRIPTION
 #define FINSH_ARG_MAX 10
+#define RT_USING_DFS
+#define DFS_USING_POSIX
+#define DFS_USING_WORKDIR
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
+#define DFS_FD_MAX 16
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -75,6 +85,7 @@
 #define RT_USING_SERIAL_V1
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
+#define RT_USING_MTD_NOR
 
 /* Using USB */
 
@@ -85,6 +96,7 @@
 
 /* POSIX (Portable Operating System Interface) layer */
 
+#define RT_USING_MODULE
 
 /* Interprocess Communication (IPC) */
 
@@ -122,11 +134,6 @@
 
 /* language packages */
 
-/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
-
-
-/* XML: Extensible Markup Language */
-
 
 /* multimedia packages */
 
@@ -147,9 +154,6 @@
 /* enhanced kernel services */
 
 
-/* POSIX extension functions */
-
-
 /* acceleration: Assembly language or algorithmic acceleration packages */
 
 
@@ -158,6 +162,15 @@
 
 /* Micrium: Micrium software products porting for RT-Thread */
 
+#define PKG_USING_LITTLEFS
+#define PKG_USING_LITTLEFS_LATEST_VERSION
+#define LFS_READ_SIZE 256
+#define LFS_PROG_SIZE 256
+#define LFS_BLOCK_SIZE 4096
+#define LFS_CACHE_SIZE 256
+#define LFS_BLOCK_CYCLES -1
+#define LFS_THREADSAFE
+#define LFS_LOOKAHEAD_MAX 128
 
 /* peripheral libraries and drivers */
 
@@ -168,8 +181,6 @@
 
 
 /* miscellaneous packages */
-
-/* project laboratory */
 
 /* samples: kernel and components samples */
 
@@ -199,6 +210,8 @@
 #define NRFX_UART0_ENABLED 1
 #define BSP_UART0_RX_PIN 8
 #define BSP_UART0_TX_PIN 6
+#define BSP_USING_ON_CHIP_FLASH
+#define BSP_USING_ON_CHIP_FS
 
 /* On-chip flash config */
 
