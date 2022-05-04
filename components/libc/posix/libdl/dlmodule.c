@@ -19,6 +19,12 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+
+#define SEEK_SET 0 /* start of stream (see fseek) */
+#define SEEK_CUR 1 /* current position in stream (see fseek) */
+#define SEEK_END 2 /* end of stream (see fseek) */
+
+
 #endif
 
 #define DBG_TAG    "DLMD"

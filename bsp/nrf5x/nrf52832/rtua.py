@@ -23,6 +23,7 @@ def GetCPPPATH(BSP_ROOT, RTT_ROOT):
 		RTT_ROOT + "/components/libc/posix/io/stdio",
 		RTT_ROOT + "/components/libc/posix/ipc",
 		RTT_ROOT + "/components/libc/posix/libdl",
+		RTT_ROOT + "/components/utilities/ymodem",
 		RTT_ROOT + "/include",
 		RTT_ROOT + "/libcpu/arm/common",
 		RTT_ROOT + "/libcpu/arm/cortex-m4",
