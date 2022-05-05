@@ -67,6 +67,10 @@
 #define MSH_USING_BUILT_IN_COMMANDS
 #define FINSH_USING_DESCRIPTION
 #define FINSH_ARG_MAX 10
+#define RT_USING_FAL
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
+#define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
 
@@ -75,6 +79,7 @@
 #define RT_USING_SERIAL_V1
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
+#define RT_USING_MTD_NOR
 
 /* Using USB */
 
@@ -189,6 +194,7 @@
 #define NRFX_UART0_ENABLED 1
 #define BSP_UART0_RX_PIN 8
 #define BSP_UART0_TX_PIN 6
+#define BSP_USING_ON_CHIP_FLASH
 
 /* On-chip flash config */
 
