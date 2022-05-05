@@ -108,6 +108,8 @@
 
 /* Utilities */
 
+#define RT_USING_RYM
+#define YMODEM_USING_FILE_TRANSFER
 
 /* RT-Thread Utestcases */
 
