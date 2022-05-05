@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <stdio.h>
 #endif
 
 #define DBG_TAG    "DLMD"
