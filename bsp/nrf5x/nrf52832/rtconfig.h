@@ -46,7 +46,7 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
 #define RT_CONSOLE_DEVICE_NAME "uart0"
-#define RT_VER_NUM 0x40100
+#define RT_VER_NUM 0x40101
 
 /* RT-Thread Components */
 
@@ -122,11 +122,6 @@
 
 /* language packages */
 
-/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
-
-
-/* XML: Extensible Markup Language */
-
 
 /* multimedia packages */
 
@@ -147,9 +142,6 @@
 /* enhanced kernel services */
 
 
-/* POSIX extension functions */
-
-
 /* acceleration: Assembly language or algorithmic acceleration packages */
 
 
@@ -168,8 +160,6 @@
 
 
 /* miscellaneous packages */
-
-/* project laboratory */
 
 /* samples: kernel and components samples */
 
