@@ -168,6 +168,7 @@ static void _dlmodule_thread_entry(void* parameter)
     /* set status of module */
     module->stat = RT_DLMODULE_STAT_RUNNING;
 
+    // 执行动态模块
     LOG_D("run main entry: 0x%p with %s",
         module->entry_addr,
         module->cmd_line);
@@ -449,6 +450,7 @@ struct rt_dlmodule* dlmodule_load(const char* filename)
         module_ptr = (uint8_t*) rt_malloc (length);
         if (!module_ptr) goto __exit;
 
+        /* 将整个ELF文件读到内存中，方便后续解析 */
         if (read(fd, module_ptr, length) != length)
             goto __exit;
 
@@ -517,6 +519,7 @@ struct rt_dlmodule* dlmodule_load(const char* filename)
 #endif
 
     /* set module initialization and cleanup function */
+    /* 从ELF文件的动态符号表中查找是否有这两个函数 */
     module->init_func = dlsym(module, "module_init");
     module->cleanup_func = dlsym(module, "module_cleanup");
     module->stat = RT_DLMODULE_STAT_INIT;

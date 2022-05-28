@@ -18,8 +18,9 @@ int dlmodule_relocate(struct rt_dlmodule *module, Elf32_Rel *rel, Elf32_Addr sym
     Elf32_Sword addend, offset;
     rt_uint32_t upper, lower, sign, j1, j2;
 
+    // 包含重定位内容的section中的重定位入口偏移地址，接下来需要修改该地址处的值
     where = (Elf32_Addr *)((rt_uint8_t *)module->mem_space
-                           + rel->r_offset
+                           + rel->r_offset 
                            - module->vstart_addr);
     switch (ELF32_R_TYPE(rel->r_info))
     {

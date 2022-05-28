@@ -32,31 +32,29 @@ struct rt_dlmodule
 
     rt_uint8_t stat;        /* status of module */
 
-    /* main thread of this module */
-    rt_uint16_t priority;
-    rt_uint32_t stack_size;
-    struct rt_thread *main_thread;
+    /* rt-thread在装一个elf格式文件时，会自动为它创建一个线程来执行它,下面就是该线程的几个属性 */
+    rt_uint16_t priority;                   /* 模块的线程优先级 */
+    rt_uint32_t stack_size;                 /* 模块的线程栈大小 */
+    struct rt_thread *main_thread;          /* 模块的线程控制块 */
+    
     /* the return code */
     int ret_code;
 
-    /* VMA base address for the first LOAD segment */
-    rt_uint32_t vstart_addr;
+    rt_uint32_t vstart_addr;                /* ELF文件中，第一个可加载段的起始地址 */
 
-    /* module entry, RT_NULL for dynamic library */
-    rt_dlmodule_entry_func_t  entry_addr;
-    char *cmd_line;         /* command line */
+    rt_dlmodule_entry_func_t  entry_addr;   /* 当前模块执行指令的入口地址，如果是动态链接库，则为NULL */
+    char *cmd_line;                         /* command line */
 
-    rt_addr_t   mem_space;  /* memory space */
-    rt_uint32_t mem_size;   /* sizeof memory space */
+    rt_addr_t   mem_space;                  /* ELF文件中，需要加载到内存中的段（数据+指令），保存到该区域 */
+    rt_uint32_t mem_size;                   /* ELF文件中，加载到内存中的段（数据+指令）的长度 */
 
-    /* init and clean function */
-    rt_dlmodule_init_func_t     init_func;
-    rt_dlmodule_cleanup_func_t  cleanup_func;
+    rt_dlmodule_init_func_t     init_func;  /* 在执行模块的入口地址前，调用的函数，可以做一些初始化操作 */
+    rt_dlmodule_cleanup_func_t  cleanup_func;/*在执行完模块后，调用的函数，可以做一些清理工作 */
 
-    rt_uint16_t nref;       /* reference count */
+    rt_uint16_t nref;                       /* 当前模块被引用（open）的次数 */
 
-    rt_uint16_t nsym;       /* number of symbols in the module */
-    struct rt_module_symtab *symtab;    /* module symbol table */
+    rt_uint16_t nsym;                       /* 当前模块中，使用到的外部符号（这里指函数）的个数 */
+    struct rt_module_symtab *symtab;        /* 当前模块中，使用到的外部符号（这里指函数）的表单 */
 };
 
 struct rt_dlmodule_ops
